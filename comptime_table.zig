@@ -23,14 +23,21 @@ pub fn ComptimeTable(comptime K: type, comptime V: type, comptime eq: fn (K, K) 
             };
         }
         pub fn lookup(comptime self: @This(), comptime key: K) ?V {
-            if (self.lookupNode(key)) |node| return node.value else return null;
+            if (self.lookupNodeConst(key)) |node| return node.value else return null;
         }
 
-        fn lookupNode(comptime self: @This(), comptime key: K) ?*@This() {
+        fn lookupNode(comptime self: *@This(), comptime key: K) ?*@This() {
+            var table: @TypeOf(self.next) = self;
+            while (table) |node| : (table = node.next) {
+                if (eq(key, node.key)) return node;
+            }
+            return null;
+        }
+        fn lookupNodeConst(comptime self: @This(), comptime key: K) ?@This() {
             var newself = self;
             var table: @TypeOf(self.next) = &newself;
             while (table) |node| : (table = node.next) {
-                if (eq(key, node.key)) return node;
+                if (eq(key, node.key)) return node.*;
             }
             return null;
         }
@@ -48,7 +55,7 @@ fn typeEq(comptime a: type, comptime b: type) bool {
     return a == b;
 }
 test "stuff" {
-    const strtable = comptime blk: {
+    const table = comptime blk: {
         var table = ComptimeTable([]const u8, type, strEq).init("hello", i32);
         table.set("there", type);
         table.set("cruel", ComptimeTable(type, type, typeEq));
