@@ -3,10 +3,10 @@ const std = @import("std");
 pub fn ComptimeTable(comptime K: type, comptime V: type, comptime eq: fn (K, K) bool) type {
     return struct {
         pub fn set(comptime self: *@This(), comptime key: K, comptime value: V) void {
-            var old_self = self.*;
             if (self.lookupNode(key)) |node| {
                 node.value = value;
             } else {
+                var old_self = self.*; //comptime allocator :^)
                 self.* = @This(){
                     .key = key,
                     .value = value,
@@ -55,14 +55,23 @@ fn typeEq(comptime a: type, comptime b: type) bool {
     return a == b;
 }
 test "stuff" {
+    @setEvalBranchQuota(1000000);
     const table = comptime blk: {
         var table = ComptimeTable([]const u8, type, strEq).init("hello", i32);
+        var i: u8 = 0;
+        while (i < 40) : (i += 1) {
+            table.set(&[1]u8{i}, u8);
+        }
         table.set("there", type);
         table.set("cruel", ComptimeTable(type, type, typeEq));
         table.set("world", i64);
+        while (i < 40) : (i += 1) {
+            table.set(&[1]u8{i}, u8);
+        }
         break :blk table;
     };
     std.debug.warn("\ntable[\"hello\"] = {}\n", .{@typeName(comptime table.lookup("hello").?)});
+    std.debug.warn("\ntable[20] = {}\n", .{@typeName(comptime table.lookup(&[1]u8{20}).?)});
 
     std.debug.warn("table = {}\n", .{table});
 }
