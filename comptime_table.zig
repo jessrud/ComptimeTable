@@ -15,7 +15,7 @@ pub fn ComptimeTable(comptime K: type, comptime V: type, comptime eq: fn (K, K) 
             }
         }
 
-        pub fn init(key: K, comptime value: V) @This() {
+        pub fn init(comptime key: K, comptime value: V) @This() {
             return @This(){
                 .key = key,
                 .value = value,
