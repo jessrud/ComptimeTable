@@ -5,7 +5,8 @@ pub fn ComptimeTable(comptime K: type, comptime V: type, comptime eq: fn (K, K) 
         pub fn set(comptime self: *@This(), comptime key: K, comptime value: V) void {
             if (self.lookupNode(key)) |node| {
                 node.value = value;
-            } else {
+            } else
+                comptime {
                 var old_self = self.*; //comptime allocator :^)
                 self.* = @This(){
                     .key = key,
